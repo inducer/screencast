@@ -1,4 +1,4 @@
-#! /bin/zsh
+#! /bin/bash
 
 set -e
 
@@ -15,12 +15,13 @@ PIP_TOP=$((SCREEN_HEIGHT-PIP_HEIGHT-10))
 
 FRAMERATE=5
 
-DIR=`dirname "$0"`
-MYDIR=$(cd "$DIR" && pwd)
+EXECUTABLE="$(readlink -f "$0")"
+DIR="$(dirname "$EXECUTABLE")"
+DIR="$(readlink -f "$DIR")"
 
 function do_beep()
 {
-  $MYDIR/beep "$@" 2> /dev/null
+  $DIR/beep "$@" 2> /dev/null
 }
 
 NOWAIT=0
@@ -76,6 +77,7 @@ gst-launch-1.0 \
       sink_0::xpos=0 sink_0::ypos=0 \
       sink_1::xpos=${PIP_LEFT} sink_1::ypos=${PIP_TOP} \
     ! "video/x-raw,width=(int)${SCREEN_WIDTH},height=(int)${SCREEN_HEIGHT},framerate=(fraction)${FRAMERATE}/1" \
+    ! y4menc
     ! mux. \
     \
     pulsesrc \
