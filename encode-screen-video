@@ -1,0 +1,74 @@
+#! /bin/sh
+
+set -e
+
+if test "$1" = ""; then
+  echo "usage: $0 FILEROOT"
+  exit 1
+fi
+
+ROOT="${1%%.ogv}"
+if test "$ROOT" = "$1"; then
+  echo "file $1 does not end in ogv"
+  exit 1
+fi
+SRC="$ROOT.ogv"
+if ! test -f "$SRC" ; then
+  echo "file $SRC does not exist"
+  exit 1
+fi
+TGT_WEBM="$ROOT.webm"
+if test -f "$TGT_WEBM" ; then
+  echo "file $TGT_WEBM already exists"
+  exit 1
+fi
+TGT_MP4="$ROOT.mp4"
+if test -f "$TGT_MP4" ; then
+  echo "file $TGT_MP4 already exists"
+  exit 1
+fi
+
+# {{{ webm encode
+
+gst-launch-1.0 \
+    filesrc location="$SRC" ! decodebin name=demux \
+    webmmux name=wmux ! filesink location="$TGT_WEBM" \
+    \
+    demux. \
+    ! queue \
+    ! videoconvert \
+    ! vp8enc threads=4 \
+    ! wmux. \
+    \
+    demux. \
+    ! queue \
+    ! progressreport \
+    ! audioconvert \
+    ! audioresample \
+    ! vorbisenc \
+    ! wmux. \
+
+# }}}
+
+# {{{ mp4 encode
+
+gst-launch-1.0 \
+    filesrc location="$SRC" ! decodebin name=demux \
+    mp4mux name=wmux ! filesink location="$TGT_MP4" \
+    \
+    demux. \
+    ! queue \
+    ! videoconvert \
+    ! x264enc threads=4 \
+    ! wmux. \
+    \
+    demux. \
+    ! progressreport \
+    ! audioconvert \
+    ! audioresample \
+    ! lamemp3enc \
+    ! wmux. \
+
+# }}}
+
+# vim: foldmethod=marker

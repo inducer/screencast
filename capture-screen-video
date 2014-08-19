@@ -1,0 +1,83 @@
+#! /bin/bash
+
+
+SCREEN_WIDTH=800
+SCREEN_HEIGHT=600
+
+PIP_WIDTH=160
+PIP_HEIGHT=120
+
+PIP_LEFT=$((SCREEN_WIDTH-PIP_WIDTH-10))
+PIP_TOP=$((SCREEN_HEIGHT-PIP_HEIGHT-10-30))
+
+FRAMERATE=30
+
+DIR=`dirname "$0"`
+MYDIR=$(cd "$DIR" && pwd)
+
+function do_beep()
+{
+  $MYDIR/beep "$@" 2> /dev/null
+}
+
+NOWAIT=0
+if test "$1" = "--nowait"; then
+  NOWAIT=1
+  shift
+fi
+
+TGT="$1"
+if test "$1" = ""; then
+  echo "usage: $0 [--nowait] file.ogv"
+  exit 1
+fi
+if test -f "$TGT" ; then
+  echo "file $TGT already exists"
+  exit 1
+fi
+
+echo "switching resolution..."
+xrandr -s "${SCREEN_WIDTH}x${SCREEN_HEIGHT}"
+if test "$NOWAIT" = 0; then
+  sleep 5
+fi
+echo "done"
+
+if test "$NOWAIT" = 0; then
+  for i in 3 2 1; do
+    clear
+    figlet $i
+    do_beep 440 &
+    sleep 1
+  done
+fi
+clear
+figlet ACTION!
+do_beep 660
+
+#set -x
+
+gst-launch-1.0 \
+    oggmux name=mux ! filesink location="$TGT" \
+    \
+    ximagesrc \
+    ! "video/x-raw,width=(int)${SCREEN_WIDTH},height=(int)${SCREEN_HEIGHT},framerate=(fraction)${FRAMERATE}/1" \
+    ! vmix.sink_0 \
+    \
+    v4l2src device="/dev/video1" \
+    ! "video/x-raw,width=(int)${PIP_WIDTH},height=(int)${PIP_HEIGHT},framerate=(fraction)${FRAMERATE}/1" \
+    ! vmix.sink_1 \
+    \
+    videomixer name=vmix \
+      sink_0::xpos=0 sink_0::ypos=0 \
+      sink_1::xpos=${PIP_LEFT} sink_1::ypos=${PIP_TOP} \
+    ! videoconvert \
+    ! queue \
+    ! theoraenc \
+    ! mux. \
+    \
+    pulsesrc \
+    ! queue \
+    ! audioconvert \
+    ! vorbisenc \
+    ! mux. \
