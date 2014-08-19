@@ -30,6 +30,10 @@ fi
 
 # {{{ webm encode
 
+echo "--------------------------------------------"
+echo "webm encode"
+echo "--------------------------------------------"
+
 gst-launch-1.0 \
     filesrc location="$SRC" ! decodebin name=demux \
     webmmux name=wmux ! filesink location="$TGT_WEBM" \
@@ -51,6 +55,10 @@ gst-launch-1.0 \
 # }}}
 
 # {{{ mp4 encode
+
+echo "--------------------------------------------"
+echo "mp4 encode"
+echo "--------------------------------------------"
 
 gst-launch-1.0 \
     filesrc location="$SRC" ! decodebin name=demux \

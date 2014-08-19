@@ -1,8 +1,11 @@
-#! /bin/bash
+#! /bin/zsh
 
+set -e
 
 SCREEN_WIDTH=800
 SCREEN_HEIGHT=600
+
+CAMERA_DEV="/dev/video1"
 
 PIP_WIDTH=160
 PIP_HEIGHT=120
@@ -10,7 +13,7 @@ PIP_HEIGHT=120
 PIP_LEFT=$((SCREEN_WIDTH-PIP_WIDTH-10))
 PIP_TOP=$((SCREEN_HEIGHT-PIP_HEIGHT-10-30))
 
-FRAMERATE=30
+FRAMERATE=10
 
 DIR=`dirname "$0"`
 MYDIR=$(cd "$DIR" && pwd)
@@ -61,23 +64,37 @@ gst-launch-1.0 \
     oggmux name=mux ! filesink location="$TGT" \
     \
     ximagesrc \
+    ! videoscale \
     ! "video/x-raw,width=(int)${SCREEN_WIDTH},height=(int)${SCREEN_HEIGHT},framerate=(fraction)${FRAMERATE}/1" \
+    ! queue \
     ! vmix.sink_0 \
     \
-    v4l2src device="/dev/video1" \
+    v4l2src device="${CAMERA_DEV}" \
     ! "video/x-raw,width=(int)${PIP_WIDTH},height=(int)${PIP_HEIGHT},framerate=(fraction)${FRAMERATE}/1" \
+    ! queue \
     ! vmix.sink_1 \
     \
     videomixer name=vmix \
       sink_0::xpos=0 sink_0::ypos=0 \
       sink_1::xpos=${PIP_LEFT} sink_1::ypos=${PIP_TOP} \
+    ! "video/x-raw,width=(int)${SCREEN_WIDTH},height=(int)${SCREEN_HEIGHT},framerate=(fraction)${FRAMERATE}/1" \
     ! videoconvert \
-    ! queue \
     ! theoraenc \
+    ! queue \
     ! mux. \
     \
     pulsesrc \
-    ! queue \
     ! audioconvert \
     ! vorbisenc \
-    ! mux. \
+    ! mux. &
+CAPTURE_PID="$!"
+sleep 1 # Print after gstreamer chatter
+
+echo -n "[Enter to stop]"
+read LINE
+for i in 1; do
+  echo "STOPPING IN $i..."
+  sleep 1
+done
+kill -INT "$CAPTURE_PID"
+wait "$CAPTURE_PID"
