@@ -10,10 +10,10 @@ CAMERA_DEV="/dev/video1"
 PIP_WIDTH=160
 PIP_HEIGHT=120
 
-PIP_LEFT=$((SCREEN_WIDTH-PIP_WIDTH-10))
-PIP_TOP=$((SCREEN_HEIGHT-PIP_HEIGHT-10-30))
+PIP_LEFT=$((SCREEN_WIDTH-PIP_WIDTH-50))
+PIP_TOP=$((SCREEN_HEIGHT-PIP_HEIGHT-10))
 
-FRAMERATE=10
+FRAMERATE=5
 
 DIR=`dirname "$0"`
 MYDIR=$(cd "$DIR" && pwd)
@@ -31,7 +31,7 @@ fi
 
 TGT="$1"
 if test "$1" = ""; then
-  echo "usage: $0 [--nowait] file.ogv"
+  echo "usage: $0 [--nowait] file.mkv"
   exit 1
 fi
 if test -f "$TGT" ; then
@@ -61,31 +61,25 @@ do_beep 660
 #set -x
 
 gst-launch-1.0 \
-    oggmux name=mux ! filesink location="$TGT" \
+    matroskamux name=mux ! filesink location="$TGT" \
     \
     ximagesrc \
     ! videoscale \
     ! "video/x-raw,width=(int)${SCREEN_WIDTH},height=(int)${SCREEN_HEIGHT},framerate=(fraction)${FRAMERATE}/1" \
-    ! queue \
     ! vmix.sink_0 \
     \
     v4l2src device="${CAMERA_DEV}" \
     ! "video/x-raw,width=(int)${PIP_WIDTH},height=(int)${PIP_HEIGHT},framerate=(fraction)${FRAMERATE}/1" \
-    ! queue \
     ! vmix.sink_1 \
     \
     videomixer name=vmix \
       sink_0::xpos=0 sink_0::ypos=0 \
       sink_1::xpos=${PIP_LEFT} sink_1::ypos=${PIP_TOP} \
     ! "video/x-raw,width=(int)${SCREEN_WIDTH},height=(int)${SCREEN_HEIGHT},framerate=(fraction)${FRAMERATE}/1" \
-    ! videoconvert \
-    ! theoraenc \
-    ! queue \
     ! mux. \
     \
     pulsesrc \
-    ! audioconvert \
-    ! vorbisenc \
+    ! "audio/x-raw,channels=(int)1,rate=(int)22050" \
     ! mux. &
 CAPTURE_PID="$!"
 sleep 1 # Print after gstreamer chatter

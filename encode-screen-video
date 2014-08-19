@@ -7,26 +7,36 @@ if test "$1" = ""; then
   exit 1
 fi
 
-ROOT="${1%%.ogv}"
+ROOT="${1%%.mkv}"
 if test "$ROOT" = "$1"; then
-  echo "file $1 does not end in ogv"
+  echo "file $1 does not end in mkv"
   exit 1
 fi
-SRC="$ROOT.ogv"
+SRC="$ROOT.mkv"
 if ! test -f "$SRC" ; then
   echo "file $SRC does not exist"
   exit 1
 fi
-TGT_WEBM="$ROOT.webm"
+
+mkdir -p encoded
+
+TGT_WEBM="encoded/$ROOT.webm"
 if test -f "$TGT_WEBM" ; then
   echo "file $TGT_WEBM already exists"
   exit 1
 fi
-TGT_MP4="$ROOT.mp4"
+TGT_MP4="encoded/$ROOT.mp4"
 if test -f "$TGT_MP4" ; then
   echo "file $TGT_MP4 already exists"
   exit 1
 fi
+TGT_JPEG="encoded/$ROOT.jpeg"
+if test -f "$TGT_JPEG" ; then
+  echo "file $TGT_JPEG already exists"
+  exit 1
+fi
+
+avconv -i "$SRC" -ss "3" -vframes 1 -vcodec mjpeg -f image2 "$TGT_JPEG"
 
 # {{{ webm encode
 
@@ -68,6 +78,7 @@ gst-launch-1.0 \
     ! queue \
     ! videoconvert \
     ! x264enc threads=4 \
+    ! "video/x-h264,profile=(string)baseline" \
     ! wmux. \
     \
     demux. \
