@@ -83,7 +83,7 @@ gst-launch-1.0 \
     ! progressreport \
     ! audioconvert \
     ! audioresample \
-    ! lamemp3enc \
+    ! voaacenc \
     ! wmux. \
 
 # }}}
