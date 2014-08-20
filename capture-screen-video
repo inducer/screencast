@@ -10,10 +10,10 @@ CAMERA_DEV="/dev/video1"
 PIP_WIDTH=160
 PIP_HEIGHT=120
 
-PIP_LEFT=$((SCREEN_WIDTH-PIP_WIDTH-50))
-PIP_TOP=$((SCREEN_HEIGHT-PIP_HEIGHT-10))
+PIP_LEFT=$((SCREEN_WIDTH-PIP_WIDTH-30))
+PIP_TOP=$((SCREEN_HEIGHT-PIP_HEIGHT-50))
 
-FRAMERATE=5
+FRAMERATE=10
 
 EXECUTABLE="$(readlink -f "$0")"
 DIR="$(dirname "$EXECUTABLE")"
@@ -40,12 +40,18 @@ if test -f "$TGT" ; then
   exit 1
 fi
 
-echo "switching resolution..."
-xrandr -s "${SCREEN_WIDTH}x${SCREEN_HEIGHT}"
-if test "$NOWAIT" = 0; then
-  sleep 5
+CUR_RES=$(xdpyinfo  | grep dimensions | cut -d: -f2 | cut -d'p' -f1)
+DESIRED_RES="${SCREEN_WIDTH}x${SCREEN_HEIGHT}"
+
+# no quotes on purpose to kill spaces
+if test $CUR_RES != $DESIRED_RES; then
+  echo "switching resolution..."
+  xrandr -s "$DESIRED_RES"
+  if test "$NOWAIT" = 0; then
+    sleep 5
+  fi
+  echo "done"
 fi
-echo "done"
 
 if test "$NOWAIT" = 0; then
   for i in 3 2 1; do
@@ -62,22 +68,24 @@ do_beep 660
 #set -x
 
 gst-launch-1.0 \
-    matroskamux name=mux ! filesink location="$TGT" \
-    \
-    ximagesrc \
-    ! videoscale \
-    ! "video/x-raw,width=(int)${SCREEN_WIDTH},height=(int)${SCREEN_HEIGHT},framerate=(fraction)${FRAMERATE}/1" \
-    ! vmix.sink_0 \
+    matroskamux streamable=TRUE name=mux \
+    ! filesink location="$TGT" \
     \
     v4l2src device="${CAMERA_DEV}" \
     ! "video/x-raw,width=(int)${PIP_WIDTH},height=(int)${PIP_HEIGHT},framerate=(fraction)${FRAMERATE}/1" \
+    ! vmix.sink_0 \
+    \
+    ximagesrc use_damage=FALSE \
+    ! videoscale \
+    ! videoconvert \
+    ! "video/x-raw,width=(int)${SCREEN_WIDTH},height=(int)${SCREEN_HEIGHT},framerate=(fraction)${FRAMERATE}/1" \
     ! vmix.sink_1 \
     \
     videomixer name=vmix \
-      sink_0::xpos=0 sink_0::ypos=0 \
-      sink_1::xpos=${PIP_LEFT} sink_1::ypos=${PIP_TOP} \
+      sink_0::xpos=${PIP_LEFT} sink_0::ypos=${PIP_TOP} sink_0::zorder=1 \
+      sink_1::xpos=0 sink_1::ypos=0 sink_1::zorder=0 \
     ! "video/x-raw,width=(int)${SCREEN_WIDTH},height=(int)${SCREEN_HEIGHT},framerate=(fraction)${FRAMERATE}/1" \
-    ! y4menc
+    ! jpegenc \
     ! mux. \
     \
     pulsesrc \
@@ -88,9 +96,5 @@ sleep 1 # Print after gstreamer chatter
 
 echo -n "[Enter to stop]"
 read LINE
-for i in 1; do
-  echo "STOPPING IN $i..."
-  sleep 1
-done
 kill -INT "$CAPTURE_PID"
 wait "$CAPTURE_PID"

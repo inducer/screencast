@@ -36,8 +36,6 @@ if test -f "$TGT_JPEG" ; then
   exit 1
 fi
 
-avconv -i "$SRC" -ss "3" -vframes 1 -vcodec mjpeg -f image2 "$TGT_JPEG"
-
 # {{{ webm encode
 
 echo "--------------------------------------------"
@@ -89,5 +87,7 @@ gst-launch-1.0 \
     ! wmux. \
 
 # }}}
+
+avconv -i "$TGT_MP4" -ss "3" -vframes 1 -vcodec mjpeg -f image2 "$TGT_JPEG"
 
 # vim: foldmethod=marker
