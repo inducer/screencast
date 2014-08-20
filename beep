@@ -34,7 +34,11 @@ def play(data):
 
 
 if __name__ == "__main__":
-    duration = 0.3
+    if len(sys.argv) > 2:
+        duration = float(sys.argv[2])
+    else:
+        duration = 0.3
+
     freq = int(sys.argv[1])
 
     nchunks = (RATE*duration + CHUNK-1)//CHUNK
