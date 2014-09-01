@@ -1,0 +1,60 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+from __future__ import division
+
+from gi.repository import Gtk, Gdk
+
+
+def main():
+    app = Gtk.Application(application_id="xmpp-popup")  # noqa
+
+    from argparse import ArgumentParser
+    parser = ArgumentParser()
+    parser.add_argument("--width", metavar="WIDTH", type=int, default=200)
+    parser.add_argument("--height", metavar="HEIGHT", type=int, default=200)
+    parser.add_argument("--offset-x", metavar="PIXELS", type=int, default=0)
+    parser.add_argument("--offset-y", metavar="PIXELS", type=int, default=0)
+    args = parser.parse_args()
+
+    win = Gtk.Window(title="Webcam Space Blocker")
+
+    screen = win.get_screen()
+    screen_height = screen.get_height()
+    screen_width = screen.get_width()
+
+    frame = Gtk.Frame()
+    win.add(frame)
+    frame.set_shadow_type(Gtk.ShadowType.OUT)
+
+    def close(evt):
+        win.destroy()
+        Gtk.main_quit()
+
+    close_button = Gtk.Button(label="Close")
+    close_button.connect("clicked", close)
+    for w in [frame, close_button]:
+        w.override_background_color(
+            Gtk.StateFlags.NORMAL, Gdk.RGBA(1.0, 0.3, 0.3, 1))
+        w.override_color(
+            Gtk.StateFlags.NORMAL, Gdk.RGBA(0.0, 0.0, 0.0, 1))
+
+    frame.add(close_button)
+
+    win.set_gravity(Gdk.Gravity.SOUTH_EAST)
+    win.set_type_hint(Gdk.WindowTypeHint.NOTIFICATION)
+    win.set_decorated(False)
+    win.set_urgency_hint(True)
+
+    win.resize(args.width, args.height)
+    win.move(
+        screen_width - args.offset_x - args.width,
+        screen_height - args.offset_y - args.height)
+
+    win.show_all()
+
+    Gtk.main()
+
+
+if __name__ == "__main__":
+    main()

@@ -65,6 +65,10 @@ clear
 figlet ACTION!
 do_beep 660
 
+$DIR/red-rectangle \
+  --width="$PIP_WIDTH" --height="$PIP_HEIGHT" \
+  --offset-x="30" --offset-y="30" &
+
 #set -x
 
 gst-launch-1.0 \
