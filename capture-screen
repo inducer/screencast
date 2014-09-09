@@ -1,0 +1,38 @@
+#! /bin/bash
+
+set -e
+
+FRAMERATE=10
+
+TGT="$1"
+if test "$1" = ""; then
+  echo "usage: $0 file.mkv"
+  exit 1
+fi
+if test -f "$TGT" ; then
+  echo "file $TGT already exists"
+  exit 1
+fi
+
+gst-launch-1.0 \
+    matroskamux streamable=TRUE name=mux \
+    ! filesink location="$TGT" \
+    \
+    ximagesrc use_damage=FALSE \
+    ! "video/x-raw,framerate=(fraction)${FRAMERATE}/1" \
+    ! videoconvert \
+    ! x264enc threads=4 \
+    ! "video/x-h264,profile=(string)baseline" \
+    ! mux. \
+    \
+    pulsesrc \
+    ! "audio/x-raw,channels=(int)1,rate=(int)22050" \
+    ! mux. &
+
+CAPTURE_PID="$!"
+sleep 1 # Print after gstreamer chatter
+
+echo -n "[Enter to stop]"
+read LINE
+kill -INT "$CAPTURE_PID"
+wait "$CAPTURE_PID"
