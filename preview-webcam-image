@@ -1,0 +1,9 @@
+#! /bin/bash
+
+CAMERA_DEV="/dev/video1"
+
+gst-launch-1.0 \
+    v4l2src device="${CAMERA_DEV}" \
+    ! "video/x-raw,width=(int)800,height=(int)600,framerate=(fraction)15/1" \
+    ! videoconvert \
+    ! ximagesink
