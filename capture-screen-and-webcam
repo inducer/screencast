@@ -24,6 +24,11 @@ function do_beep()
   $DIR/beep "$@" 2> /dev/null
 }
 
+RES_ONLY=0
+if test "$1" = "--res"; then
+  RES_ONLY=1
+  shift
+fi
 NOWAIT=0
 if test "$1" = "--nowait"; then
   NOWAIT=1
@@ -31,11 +36,12 @@ if test "$1" = "--nowait"; then
 fi
 
 TGT="$1"
-if test "$1" = ""; then
-  echo "usage: $0 [--nowait] file.mkv"
-  exit 1
-fi
-if test -f "$TGT" ; then
+if test "$TGT" = "";then
+  if test "$RES_ONLY" = "0"; then
+    echo "usage: $0 --res | [--nowait] file.mkv"
+    exit 1
+  fi
+elif test -f "$TGT" ; then
   echo "file $TGT already exists"
   exit 1
 fi
@@ -51,6 +57,10 @@ if test $CUR_RES != $DESIRED_RES; then
     sleep 5
   fi
   echo "done"
+fi
+
+if test "$RES_ONLY" = 1; then
+  exit 0
 fi
 
 if test "$NOWAIT" = 0; then
