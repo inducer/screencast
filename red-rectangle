@@ -34,10 +34,15 @@ def main():
     close_button = Gtk.Button(label="Close")
     close_button.connect("clicked", close)
     for w in [frame, close_button]:
-        w.override_background_color(
-            Gtk.StateFlags.NORMAL, Gdk.RGBA(1.0, 0.3, 0.3, 1))
-        w.override_color(
-            Gtk.StateFlags.NORMAL, Gdk.RGBA(0.0, 0.0, 0.0, 1))
+        for sf in [
+                Gtk.StateFlags.NORMAL,
+                Gtk.StateFlags.ACTIVE,
+                Gtk.StateFlags.FOCUSED,
+                ]:
+            w.override_background_color(
+                sf, Gdk.RGBA(1.0, 0.3, 0.3, 1))
+            w.override_color(
+                sf, Gdk.RGBA(0.0, 0.0, 0.0, 1))
 
     frame.add(close_button)
 
